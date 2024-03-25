@@ -1,101 +1,39 @@
-import csv
+from datetime import datetime
+import argparse
+import logging
 
-class Student:
-    """
-    Класс, представляющий студента.
+logging.basicConfig(filename='mystr.log', filemode='a', encoding='utf-8', level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-    Атрибуты:
-    - name (str): ФИО студента
-    - subjects (dict): словарь, содержащий предметы и их оценки и результаты тестов
-
-    Методы:
-    - __init__(self, name, subjects_file): конструктор класса
-    - __setattr__(self, name, value): дескриптор, проверяющий ФИО на первую заглавную букву и наличие только букв
-    - __getattr__(self, name): получение значения атрибута
-    - __str__(self): возвращает строковое представление студента
-    - load_subjects(self, subjects_file): загрузка предметов из файла CSV
-    - get_average_test_score(self, subject): возвращает средний балл по тестам для заданного предмета
-    - get_average_grade(self): возвращает средний балл по всем предметам
-    - add_grade(self, subject, grade): добавление оценки по предмету
-    - add_test_score(self, subject, test_score): добавление результата теста по предмету
-    """
-
-    def __init__(self, name, subjects_file):
-        self.name = name
-        self.subjects = {}
-        self.load_subjects(subjects_file)
-    def __setattr__(self, name, value):
-        if name == 'name':
-            if not value.replace(' ', '').isalpha() or not value.istitle():
-                raise ValueError("ФИО должно состоять только из букв и начинаться с заглавной буквы")
-        super().__setattr__(name, value)
-
-
-    def __getattr__(self, name):
-        if name in self.subjects:
-            return self.subjects[name]
-        else:
-            raise AttributeError(f"Предмет {name} не найден")
+class MyStr(str):
+    def __new__(cls, value, author):
+        obj = super().__new__(cls, value)
+        obj.author = author
+        obj.time = datetime.now().strftime('%Y-%m-%d %H:%M')
+        return obj
 
     def __str__(self):
-        return f"Студент: {self.name}\nПредметы: {', '.join(self.subjects.keys())}"
+        return f"{super().__str__()} (Автор: {self.author}, Время создания: {self.time})"
 
-    def load_subjects(self, subjects_file):
-        with open(subjects_file, 'r') as f:
-            reader = csv.reader(f)
-            for row in reader:
-                subject = row[0]
-                if subject not in self.subjects:
-                    self.subjects[subject] = {'grades': [], 'test_scores': []}
-    def add_grade(self, subject, grade):
-        if subject not in self.subjects:
-            self.subjects[subject] = {'grades': [], 'test_scores': []}
-        if not isinstance(grade, int) or grade < 2 or grade > 5:
-            raise ValueError("Оценка должна быть целым числом от 2 до 5")
-        self.subjects[subject]['grades'].append(grade)
+    def __repr__(self):
+        return f"MyStr({super().__repr__()}, '{self.author}')"
 
-    def add_test_score(self, subject, test_score):
-        if subject not in self.subjects:
-            self.subjects[subject] = {'grades': [], 'test_scores': []}
-        if not isinstance(test_score, int) or test_score < 0 or test_score > 100:
-            raise ValueError("Результат теста должен быть целым числом от 0 до 100")
-        self.subjects[subject]['test_scores'].append(test_score)
+def create_my_str(text, author):
+    my_string = MyStr(text, author)
+    logger.info(my_string)
+    return my_string
 
-    def get_average_test_score(self, subject):
-        if subject not in self.subjects:
-            raise ValueError(f"Предмет {subject} не найден")
-        test_scores = self.subjects[subject]['test_scores']
-        if len(test_scores) == 0:
-            return 0
-        return sum(test_scores) / len(test_scores)
+def main():
+    parser = argparse.ArgumentParser(
+        description='Создаем объект MyStr с указанным текстом и автором',
+        prog='task_2.py'
+    )
+    parser.add_argument('-t', '--text', type=str, required=True, help='Текст для создания объекта MyStr')
+    parser.add_argument('-a', '--author', type=str, required=True, help='Автор текста')
+    args = parser.parse_args()
 
-    def get_average_grade(self):
-        total_grades = []
-        for subject in self.subjects:
-            grades = self.subjects[subject]['grades']
-            if len(grades) > 0:
-                total_grades.extend(grades)
-        if len(total_grades) == 0:
-            return 0
-        return sum(total_grades) / len(total_grades)
+    my_string = create_my_str(args.text, args.author)
+    print(my_string)
 
-
-
- 
-
-
-student = Student("Иван Иванов", "subjects.csv")
-
-student.add_grade("Математика", 4)
-student.add_test_score("Математика", 85)
-
-student.add_grade("История", 5)
-student.add_test_score("История", 92)
-
-average_grade = student.get_average_grade()
-print(f"Средний балл: {average_grade}")
-
-average_test_score = student.get_average_test_score("Математика")
-print(f"Средний результат по тестам по математике: {average_test_score}")
-
-print(student)
+if __name__ == '__main__':
+    main()
